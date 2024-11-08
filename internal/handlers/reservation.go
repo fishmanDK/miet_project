@@ -8,22 +8,67 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *Handlers) CreateReservation (c *gin.Context) {
-    var input core.Reservation
-	if err := c.BindJSON(&input); err != nil{
+func (h *Handlers) CreateReservation(c *gin.Context) {
+	var input core.Reservation
+	if err := c.BindJSON(&input); err != nil {
 		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	err := h.service.Reservation.CreateReservation(input)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
+}
+
+func (h *Handlers) DeleteReservation(c *gin.Context) {
+	userID := c.GetInt("user_id")
+	if userID == 0{
+		fmt.Println("user_id = 0")
+		return 
+	}
+	var input core.DeleteReservation
+	if err := c.BindJSON(&input); err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	err := h.service.Reservation.DeleteReservation(userID, input.CassetteId)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+
+	c.JSON(http.StatusOK, nil)
+}
+
+func (h *Handlers) GetReservations(c *gin.Context) {
+	userID := c.GetInt("user_id")
+	if userID == 0{
+		fmt.Println("user_id = 0")
 		return 
 	}
 
-	id, err := h.service.Reservation.CreateReservation(input)
+	reservations, err := h.service.Reservation.GetUserReservations(userID)
 	if err != nil{
 		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, err)
-		return 
+
+		c.JSON(http.StatusBadRequest, nil)
+		return
 	}
 
-	input.Id = id
-	input.Status = "reserve"
-	c.JSON(http.StatusOK, input)
+	err = h.tmpls.ExecuteTemplate(c.Writer, "reservations.html", struct {
+		Reservations []core.Reservation
+	}{
+		Reservations: reservations,
+	})
+
 }

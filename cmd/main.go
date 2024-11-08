@@ -21,7 +21,6 @@ func main() {
 
 	appLogger := logger.NewAppLogger(cfg.Logger)
 	appLogger.InitLogger()
-
 	app := app.NewApp(cfg, appLogger)
 	app.Run()
 }
