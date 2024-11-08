@@ -1,10 +1,6 @@
 package storage
 
 import (
-	"database/sql"
-	"fmt"
-	"log"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/fishmanDK/miet_project/internal/core"
 	"github.com/jmoiron/sqlx"
@@ -20,196 +16,106 @@ func newReservationStorage(db *sqlx.DB) *ReservationStorage {
 	}
 }
 
-func (s *ReservationStorage) CreateReservation(newReservate core.Reservation) (int, error) {
-    tx, err := s.db.Begin()
-    if err != nil {
-        return 0, err
-    }
-    defer tx.Rollback()
+func (s *ReservationStorage) CreateReservation(newReservate core.Reservation) error {
+	query := sq.Insert("reserve_pool").
+		Columns("user_id", "cassette_id").
+		Values(newReservate.UserId, newReservate.CassetteId).
+		RunWith(s.db).
+		PlaceholderFormat(sq.Dollar)
 
-    // Вставка новой резервации
-    query := sq.Insert("Reservations").
-        Columns("client_id", "cassette_id", "store_id", "status").
-        Values(newReservate.ClientId, newReservate.CassetteId, newReservate.StoreId, "reserve").
-        Suffix("RETURNING \"id\"").
-        RunWith(tx). // Используем tx вместо s.db для работы внутри транзакции
-        PlaceholderFormat(sq.Dollar)
+	_, err := query.Exec()
+	if err != nil{
+		return err
+	}
 
-    var id int
-    err = query.QueryRow().Scan(&id)
-    if err != nil {
-        return 0, err
-    }
-
-    // Проверка наличия кассеты и значения total_count
-    checkQuery := sq.Select("total_count").
-        From("CassetteAvailability").
-        Where(sq.Eq{"cassette_id": newReservate.CassetteId}).
-        Where(sq.Eq{"store_id": newReservate.StoreId}).
-        RunWith(tx). // Используем tx для выполнения внутри транзакции
-        PlaceholderFormat(sq.Dollar)
-
-    var totalCount int
-    err = checkQuery.QueryRow().Scan(&totalCount)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            // Запись не найдена, возвращаем ошибку
-            return 0, fmt.Errorf("CassetteAvailability not found")
-        }
-        return 0, fmt.Errorf("failed to check CassetteAvailability: %w", err)
-    }
-
-    // Если total_count равно 0, возвращаем ошибку
-    if totalCount == 0 {
-        return 0, fmt.Errorf("total_count cannot be zero")
-    }
-
-    // Обновление наличия кассеты
-    updateQuery := sq.Update("CassetteAvailability").
-        Set("total_count", sq.Expr("total_count - 1")).
-        Set("rented_count", sq.Expr("rented_count + 1")).
-        Where(sq.Eq{"cassette_id": newReservate.CassetteId}).
-        Where(sq.Eq{"store_id": newReservate.StoreId}).
-        RunWith(tx). // Используем tx для выполнения внутри транзакции
-        PlaceholderFormat(sq.Dollar)
-
-    // Логирование запроса для отладки
-    q, args, err := updateQuery.ToSql()
-    if err != nil {
-        return 0, fmt.Errorf("failed to convert update query to SQL: %w", err)
-    }
-    log.Printf("Update SQL query: %s %v", q, args)
-
-    _, err = updateQuery.Exec()
-    if err != nil {
-        return 0, fmt.Errorf("failed to update CassetteAvailability: %w", err)
-    }
-
-    // Подтверждение транзакции
-    err = tx.Commit()
-    if err != nil {
-        return 0, err
-    }
-
-    return id, nil
+	return nil
 }
 
-// func (s *ReservationStorage) CreateReservation(newReservate core.Reservation) (int, error) {
-//     tx, err := s.db.Begin()
-//     if err != nil {
-//         return 0, err
-//     }
-//     defer tx.Rollback()
+func (s *ReservationStorage) DeleteReservation(userID, cassetteID int) error{
+	query := sq.Delete("reserve_pool").
+		Where(sq.Eq{"user_id": userID, "cassette_id": cassetteID}).
+		RunWith(s.db).
+		PlaceholderFormat(sq.Dollar)
 
-//     query := sq.Insert("Reservations").
-//         Columns("client_id", "cassette_id", "store_id", "status").
-//         Values(newReservate.ClientId, newReservate.CassetteId, newReservate.StoreId, "reserve").
-//         Suffix("RETURNING \"id\"").
-//         RunWith(s.db).
-//         PlaceholderFormat(sq.Dollar)
+	_, err := query.Exec()
+	if err != nil {
+		return err
+	}
 
-//     var id int
-//     err = query.QueryRow().Scan(&id)
-//     if err != nil {
-//         return 0, err
-//     }
+	return nil
+}
 
-//     updateQuery := sq.Update("CassetteAvailability").
-//         Set("total_count", sq.Expr("total_count - 1")).
-//         Set("rented_count", sq.Expr("rented_count + 1")).
-//         Where(sq.Eq{"cassette_id": newReservate.CassetteId}).
-//         Where(sq.Eq{"store_id": newReservate.StoreId})
+func (s *ReservationStorage) GetUserReservations(userID int) ([]core.Reservation, error){
+	query, _, err := sq.Select("cassette_id", "name").
+		From("reserve_pool").
+		Join("cassettes ON reserve_pool.cassette_id = cassettes.id").
+		Where(sq.Eq{"user_id": userID}).
+		RunWith(s.db).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
 
-//     _, err = updateQuery.RunWith(s.db).Exec()
-//     if err != nil {
-//         return 0, fmt.Errorf("failed to update CassetteAvailability: %w", err)
-//     }
+	if err != nil {
+		return []core.Reservation{}, err
+	}
 
-//     err = tx.Commit()
-//     if err != nil {
-//         return 0, err
-//     }
+	rows, err := s.db.Query(query, userID)
+	if err != nil {
+		return []core.Reservation{}, err
+	}
+	defer rows.Close()
 
-//     return id, nil
-// }
+	var res []core.Reservation
+	for rows.Next() {
+		var newVal core.Reservation
 
+		err := rows.Scan(&newVal.CassetteId, &newVal.Name)
+		if err != nil {
+			return []core.Reservation{}, err
+		}
+		res = append(res, newVal)
+	}
 
-    // checkQuery := sq.Select("total_count").From("CassetteAvailability").
-    //     Where(sq.Eq{"cassette_id": newReservate.CassetteId}).
-    //     Where(sq.Eq{"store_id": newReservate.StoreId})
+	if err := rows.Err(); err != nil {
+		return []core.Reservation{}, err
+	}
 
-    // q, args, err := checkQuery.ToSql()
-    // log.Printf("SQL query: %s %v", q, args) // Исправлено для правильного вывода аргументов
+    return res, nil
+}
 
-    // var totalCount int
-    // err = checkQuery.RunWith(s.db).QueryRow().Scan(&totalCount)
-    // if err != nil {
-    //     if err == sql.ErrNoRows {
-    //         return 0, fmt.Errorf("CassetteAvailability not found")
-    //     }
-    //     return 0, fmt.Errorf("failed to check CassetteAvailability: %w", err)
-    // }
+func (s *ReservationStorage) GetReservationsForAdmin(cassetteID, storeID int)  ([]core.ReservationsForAdminResponse, error) {
+	query, _, err := sq.Select("reservation_date", "email").
+		From("clients").
+		Join("reservations ON clients.id = reservations.client_id").
+		Where(sq.Eq{"cassette_id": cassetteID}).
+		Where(sq.Eq{"store_id": storeID}).
+		RunWith(s.db).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
 
-    // if totalCount == 0 {
-    //     return 0, fmt.Errorf("total_count cannot be zero")
-    // }
+	if err != nil {
+		return []core.ReservationsForAdminResponse{}, err
+	}
 
+	rows, err := s.db.Query(query, cassetteID, storeID)
+	if err != nil {
+		return []core.ReservationsForAdminResponse{}, err
+	}
+	defer rows.Close()
 
-// func (s *ReservationStorage) CreateReservation(newReservate core.Reservation) (int, error) {
-// 	tx, err := s.db.Begin()
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	defer tx.Rollback()
+	var res []core.ReservationsForAdminResponse
+	for rows.Next() {
+		var newVal core.ReservationsForAdminResponse
 
-// 	query := sq.Insert("Reservations").
-// 		Columns("client_id", "cassette_id", "store_id", "status").
-// 		Values(newReservate.ClientId, newReservate.CassetteId, newReservate.StoreId, "reserve").
-// 		Suffix("RETURNING \"id\"").
-// 		RunWith(s.db).
-// 		PlaceholderFormat(sq.Dollar)
+		err := rows.Scan(&newVal.ReservationDate, &newVal.Email)
+		if err != nil {
+			return []core.ReservationsForAdminResponse{}, err
+		}
+		res = append(res, newVal)
+	}
 
-// 	var id int
-// 	err = query.QueryRow().Scan(&id)
-// 	if err != nil {
-// 		return 0, err
-// 	}
+	if err := rows.Err(); err != nil {
+		return []core.ReservationsForAdminResponse{}, err
+	}
 
-// 	checkQuery := sq.Select("total_count").From("CassetteAvailability").
-// 		Where(sq.Eq{"cassette_id": newReservate.CassetteId, "store_id": newReservate.StoreId}).RunWith(s.db)
-
-// 	var totalCount int
-// 	err = checkQuery.QueryRow().Scan(&totalCount)
-// 	if err != nil {
-// 		if err == sql.ErrNoRows {
-// 			// Запись не найдена, возвращаем ошибку
-// 			return 0, fmt.Errorf("CassetteAvailability not found")
-// 		}
-// 		return 0, fmt.Errorf("failed to check CassetteAvailability: %w", err)
-// 	}
-
-// 	// Если total_count равно 0, возвращаем ошибку
-// 	if totalCount == 0 {
-// 		return 0, fmt.Errorf("total_count cannot be zero")
-// 	}
-
-// 	// Обновляем total_count и rented_count
-// 	updateQuery := sq.Update("CassetteAvailability").
-// 		Set("total_count", sq.Expr("total_count - 1")).
-// 		Set("rented_count", sq.Expr("rented_count + 1")).
-// 		Where(sq.Eq{"cassette_id": newReservate.CassetteId, "store_id": newReservate.StoreId}).
-// 		RunWith(s.db).
-// 		PlaceholderFormat(sq.Dollar)
-
-// 	_, err = updateQuery.Exec()
-// 	if err != nil {
-// 		return 0, fmt.Errorf("failed to update CassetteAvailability: %w", err)
-// 	}
-
-// 	err = tx.Commit()
-// 	if err != nil {
-// 		return 0, err
-// 	}
-
-// 	return id, nil
-// }
+    return res, nil
+}

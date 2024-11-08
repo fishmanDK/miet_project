@@ -16,7 +16,21 @@ func newReservationService(storage *storage.Storage) *ReservationService{
 }
 
 
-func (s *ReservationService) CreateReservation(newReservate core.Reservation) (int, error){
-	id, err := s.storage.Reservation.CreateReservation(newReservate)
-	return id, err
+func (s *ReservationService) CreateReservation(newReservate core.Reservation) error{
+	return s.storage.Reservation.CreateReservation(newReservate)
+}
+
+func (s *ReservationService) DeleteReservation(userID, cassetteID int) error{
+	return s.storage.Reservation.DeleteReservation(userID, cassetteID)
+}
+
+
+func (s *ReservationService) GetReservationsForAdmin(cassetteID, storeID int) ([]core.ReservationsForAdminResponse, error) {
+	res, err := s.storage.Reservation.GetReservationsForAdmin(cassetteID, storeID)
+	return res, err
+}
+
+func (s *ReservationService) GetUserReservations(userID int) ([]core.Reservation, error){
+	res, err := s.storage.Reservation.GetUserReservations(userID)
+	return res, err
 }

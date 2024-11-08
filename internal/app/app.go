@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/fishmanDK/miet_project/assets"
 	"github.com/fishmanDK/miet_project/internal/config"
 	"github.com/fishmanDK/miet_project/internal/handlers"
 	"github.com/fishmanDK/miet_project/internal/service"
@@ -35,7 +36,6 @@ func NewApp(cfg *config.Config, log logger.Logger) *app {
 }
 
 func (a *app) Run() {
-
 	postgres, err := a.connectDB()
 	if err != nil {
 		a.log.Fatal(fmt.Sprintf("Failed connect postgres: %v", err))
@@ -43,7 +43,10 @@ func (a *app) Run() {
 
 	a.storage = storage.NewStorage(postgres)
 	a.service = service.NewSerivce(a.storage)
-	a.handlers = handlers.NewHandlers(a.service)
+
+	tmpls := assets.NewTemplates(assets.Assets)
+
+	a.handlers = handlers.NewHandlers(a.service, tmpls, a.log)
 
 	a.gin = a.handlers.InitRouts()
 

@@ -1,0 +1,91 @@
+<html>
+<head>
+    <link rel="stylesheet" href="/static/css/bootstrap/bootstrap.min.css">
+    <script type="text/javascript" src="/static/js/site/set_cookie.js"></script>
+    <script type="text/javascript" src="/static/js/site/index.js"></script>
+
+    <style>
+        .hi {
+            cursor: pointer;
+            font-size: 28px;
+            font-family: "Times", "Times New Roman", "serif", "sans-serif", "EmojiSymbols";
+        }
+        .hi-red {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="#">Navbar</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/store">Stores</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Logout</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/orders">My orders</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/reservations">My reservations</a>
+              </li>
+            </ul>
+            <form class="d-flex">
+              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+              <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+          </div>
+        </div>
+    </nav>
+    <div style="margin-top: 40px;">
+        <div class="container">
+            <div class="row">
+                <!-- Колонка со списком (слева) -->
+                <div class="col-md-5 me-5"> <!-- Уменьшаем колонку и добавляем отступ -->
+                    <h3>Список магазинов</h3>
+                    <table class="table">
+                        <thead>
+                            <th scope="col">ID</th>
+                            <th scope="col">Address</th>
+                        </thead>
+                        <tbody>
+                            {{range .Stores}}
+                            <tr>
+                                <td class="store-item" data-type="id">{{.Id}}</td>
+                                <td class="store-item" data-type="id">
+                                    <a href="store/{{.Id}}">{{.Address}}</a>
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Колонка с формой (справа) -->
+                {{if .IsAdmin}}
+                    <div class="col-md-5 ms-5"> <!-- Добавляем отступ слева -->
+                        <h3>Добавление нового магазина</h3>
+                        <form>
+                            <div class="mb-3">
+                                <label for="storeAddress" class="form-label">Адрес</label>
+                                <input type="text" class="form-control" id="storeAddress">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Добавить</button>
+                        </form>
+                    </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="/static/js/site/create_store.js"></script>
+    <script type="text/javascript" src="/static/js/site/logout.js"></script>
+</body>
+</html>

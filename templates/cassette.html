@@ -1,0 +1,67 @@
+<html>
+<head>
+    <link rel="stylesheet" href="/static/css/bootstrap/bootstrap.min.css">
+    <script type="text/javascript" src="/static/js/site/set_cookie.js"></script>
+    <script type="text/javascript" src="/static/js/site/index.js"></script>
+    <style>
+        .hi {
+            cursor: pointer;
+            font-size: 28px;
+            font-family: "Times", "Times New Roman", "serif", "sans-serif", "EmojiSymbols";
+        }
+        .hi-red {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="#">Navbar</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+              <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="/store">Stores</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Logout</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/orders">My orders</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/reservations">My reservations</a>
+              </li>
+            </ul>
+            <form class="d-flex">
+              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+              <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+          </div>
+        </div>
+    </nav>
+    <div style="margin-top: 40px;">
+        <div class="container">
+            <h4>Детали кассеты:</h4>
+            <p id="cassette_id"><strong>ID:</strong> {{.Cassette.Id}}</p>
+            <p><strong>Name:</strong> {{.Cassette.Name}}</p>
+            <p><strong>Genre:</strong> {{.Cassette.Genre}}</p>
+            <p><strong>Year of release:</strong> {{.Cassette.Year}}</p>
+            <p id="total_count">
+                <strong>Total count:</strong>
+                <span id="total_count_value"> {{.Cassette.TotalCount}}</span>
+            </p>
+            <p id="rented_count" style="display: inline-block; margin-right: 10px;">
+                <strong>Rented count:</strong>
+                <span id="rented_count_value"> {{.Cassette.RentedCount}}</span>
+            </p>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="/static/js/site/create_store.js"></script>
+    <script type="text/javascript" src="/static/js/site/logout.js"></script>
+</body>
+</html>
