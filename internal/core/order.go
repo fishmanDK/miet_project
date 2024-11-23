@@ -17,7 +17,13 @@ type OrderExecution struct {
 }
 
 type DeleteOrder struct {
-	UserId     string `json:"userId" db:"user_id"`
-	CassetteId string `json:"cassetteId" db:"cassette_id"`
-	StoreID    string `json:"storeId" db:"store_id"`
+	CassetteID int `json:"cassette_id" db:"cassette_id"`
+	UserID     int `json:"user_id" db:"user_id"`
+}
+
+type OrdersForAdminResponse struct {
+	CassetteID      int    `json:"cassette_id,omitempty" db:"cassette_id"`
+	ReservationDate string `json:"reservation_date,omitempty" db:"reservation_date"`
+	Email           string `json:"email,omitempty" db:"email"`
+	UserID          int    `json:"user_id" db:"user_id"`
 }

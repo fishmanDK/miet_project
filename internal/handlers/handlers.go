@@ -8,16 +8,20 @@ import (
 	"github.com/fishmanDK/miet_project/internal/service"
 	"github.com/fishmanDK/miet_project/pkg/logger"
 	"github.com/gin-gonic/gin"
+
+	c "github.com/fishmanDK/miet_project/internal/checker"
 )
 
 type Handlers struct{
+	checker  *c.CheckerFirstReserveUsers
 	service *service.Service
 	log logger.Logger
 	tmpls *template.Template
 }
 
-func NewHandlers(service *service.Service, tmpls *template.Template, log logger.Logger) *Handlers{
+func NewHandlers(checker  *c.CheckerFirstReserveUsers, service *service.Service, tmpls *template.Template, log logger.Logger) *Handlers{
 	return &Handlers{
+		checker: checker,
 		service: service,
 		tmpls: tmpls,
 		log: log,
@@ -64,7 +68,6 @@ func (h *Handlers) InitRouts() *gin.Engine {
 	{
 		orders.GET("", h.GetOrders)
 		orders.POST("", h.CreateOrder)
-		orders.DELETE("/:id", h.DeleteOrder)
 	}
 
 
@@ -94,7 +97,15 @@ func (h *Handlers) InitRouts() *gin.Engine {
 		cassette.GET("/details/:id", h.GetCassetteDetails) //TODO
 		cassette.DELETE("/:id", h.DeleteCassette) //TODO
 		cassette.POST("", h.CreateCassette)
+		cassette.PUT("", h.SaveCassetteChanges)
 	}
+
+	admin := router.Group("/admin", h.Authentication)
+	{
+		admin.GET("/orders", h.GetOrdersForAdmin)
+		admin.DELETE("/orders", h.DeleteOrder)
+	}
+
 
 	// user.Use(h.Authentication)
 	// reservation.Use(h.Authentication)

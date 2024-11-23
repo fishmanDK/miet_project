@@ -37,18 +37,13 @@
                 <a class="nav-link" href="/reservations">My reservations</a>
               </li>
             </ul>
-            <form class="d-flex">
-              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-              <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
           </div>
         </div>
     </nav>
     <div style="margin-top: 40px;">
         <div class="container">
             <div class="row">
-                <!-- Колонка со списком (слева) -->
-                <div class="col-md-5 me-5"> <!-- Уменьшаем колонку и добавляем отступ -->
+                <div class="col-md-5 me-5">
                     <h3>Список магазинов</h3>
                     <table class="table">
                         <thead>
@@ -68,16 +63,15 @@
                     </table>
                 </div>
 
-                <!-- Колонка с формой (справа) -->
                 {{if .IsAdmin}}
-                    <div class="col-md-5 ms-5"> <!-- Добавляем отступ слева -->
+                    <div class="col-md-5 ms-5">
                         <h3>Добавление нового магазина</h3>
-                        <form>
+                        <form id="addStore">
                             <div class="mb-3">
                                 <label for="storeAddress" class="form-label">Адрес</label>
                                 <input type="text" class="form-control" id="storeAddress">
                             </div>
-                            <button type="submit" class="btn btn-primary">Добавить</button>
+                            <button type="button" class="btn btn-primary" id="submitStoreForm">Добавить</button>
                         </form>
                     </div>
                 {{end}}

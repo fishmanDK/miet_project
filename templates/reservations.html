@@ -3,6 +3,7 @@
     <link rel="stylesheet" href="/static/css/bootstrap/bootstrap.min.css">
     <script type="text/javascript" src="/static/js/site/set_cookie.js"></script>
     <script type="text/javascript" src="/static/js/site/index.js"></script>
+    <script type="text/javascript" src="/static/js/site/cassette_info.js"></script>
     <style>
         .hi {
             cursor: pointer;
@@ -36,10 +37,6 @@
                 <a class="nav-link" href="/reservations">My reservations</a>
               </li>
             </ul>
-            <form class="d-flex">
-              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-              <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
           </div>
         </div>
     </nav>
@@ -53,6 +50,8 @@
                         <thead>
                             <th scope="col">ID</th>
                             <th scope="col">Name cassette</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Action</th>
                         </thead>
                         <tbody>
                             {{range .Reservations}}
@@ -61,6 +60,10 @@
                                 <td class="store-item" data-name={{.Name}}>
                                     <a href="cassette/{{.CassetteId}}">{{.Name}}</a>
                                 </td>
+                                <td class="store-item">{{.ReservationDate}}</td>
+                                <td>
+                                  <a href="#" class="delete-icon" title="Удалить запись" onclick="deleteReservation({{ .CassetteId }})">🗑️</a>
+                              </td>
                             </tr>
                             {{end}}
                         </tbody>

@@ -65,10 +65,13 @@ func (h *Handlers) GetReservations(c *gin.Context) {
 		return
 	}
 
+	for i := range reservations{
+		reservations[i].ReservationDate = reservations[i].ReservationDate[:10]
+	}
+
 	err = h.tmpls.ExecuteTemplate(c.Writer, "reservations.html", struct {
 		Reservations []core.Reservation
 	}{
 		Reservations: reservations,
 	})
-
 }

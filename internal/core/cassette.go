@@ -1,12 +1,12 @@
 package core
 
 type Cassette struct {
-	Id    int    `json:"id,omitempty" db:"id"`
-	Name  string `json:"name" db:"name"`
-	Genre string `json:"genre,omitempty" db:"genre"`
-	Year  string    `json:"year,omitempty" db:"year_of_release"`
-	TotalCount   int  `json:"totalCount" db:"total_count"`
-	RentedCount  int  `json:"rentedCount,omitempty" db:"rented_count"`
+	Id          int    `json:"id,omitempty" db:"id"`
+	Name        string `json:"name" db:"name"`
+	Genre       string `json:"genre,omitempty" db:"genre"`
+	Year        string `json:"year,omitempty" db:"year_of_release"`
+	TotalCount  int    `json:"totalCount" db:"total_count"`
+	RentedCount int    `json:"rentedCount,omitempty" db:"rented_count"`
 }
 
 type CassetteAvailability struct {
@@ -25,4 +25,12 @@ type CreateCassetteReq struct {
 	Year       int    `json:"year,omitempty" db:"year_of_release"`
 	StoreId    int    `json:"storeId,omitempty" db:"store_id"`
 	TotalCount int    `json:"totalCount" db:"total_count"`
+}
+
+type ChangeCassette struct {
+	Name       string `json:"name" db:"name"`
+	Ganre      string `json:"ganre,omitempty" db:"genre"`
+	CassetteID int    `json:"cassetteID,omitempty" db:"id"`
+	TotalCount int    `json:"totalCount" db:"total_count"`
+	Remain     int    `json:"remain"`
 }

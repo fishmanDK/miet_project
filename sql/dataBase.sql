@@ -1,60 +1,3 @@
--- CREATE TABLE users (
---     id SERIAL PRIMARY KEY,
---     email VARCHAR(100),
---     password VARCHAR(100) NOT NULL,
---     role VARCHAR(100) NOT NULL,
---     registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
--- );
-
--- CREATE TABLE Stores (
---     id SERIAL PRIMARY KEY,
---     address VARCHAR(255)
--- );
-
--- CREATE TABLE Cassettes (
---     id SERIAL PRIMARY KEY,
---     name VARCHAR(100) NOT NULL,
---     genre VARCHAR(50),
---     year_of_release INT
--- );
-
-
--- CREATE TABLE cassetteAvailability (
---     cassette_id INT REFERENCES Cassettes(id),
---     store_id INT REFERENCES Stores(id),
---     total_count INT NOT NULL,
---     rented_count INT DEFAULT 0,
---     PRIMARY KEY (cassette_id, store_id)
--- );
-
--- CREATE TABLE reservations (
---     id SERIAL PRIMARY KEY,
---     user_id INT REFERENCES users(id),
---     cassette_id INT REFERENCES Cassettes(id),
---     store_id INT REFERENCES Stores(id),
---     reservation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     receipt_date TIMESTAMP,
---     return_date TIMESTAMP,
---     status VARCHAR(20)
--- );
-
-
--- CREATE TABLE IF NOT EXISTS jwt
--- (
---     -- id serial,
---     user_id int unique,
---     refresh_token varchar(255),
---     expiresAt timestamp with time zone,
-
---     CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id)
--- );
-
--- CREATE TABLE s (
---     id SERIAL PRIMARY KEY,
---     reservaton_id INT REFERENCES Reservations(id),
---     delivery_date TIMESTAMP,
---     isDeliver bool
--- );
 -- Таблица пользователей
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -96,7 +39,25 @@ CREATE TABLE reservations (
     reservation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     receipt_date TIMESTAMP,
     return_date TIMESTAMP,
-    status VARCHAR(20) CHECK (status IN ('active', 'returned', 'cancelled')) -- Определение статусов
+    status VARCHAR(20) CHECK (status IN ('active', 'returned', 'cancelled'))
+);
+
+-- Таблица заказов
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    store_id INT REFERENCES Stores(id) ON DELETE CASCADE,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    cassette_id INT REFERENCES Cassettes(id) -- Связь с кассетами
+);
+
+-- Связь между заказами и кассетами (многие ко многим)
+CREATE TABLE order_items (
+    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+    cassette_id INT REFERENCES Cassettes(id) ON DELETE CASCADE,
+    quantity INT NOT NULL,
+    price_per_item DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (order_id, cassette_id)
 );
 
 -- Таблица для хранения JWT-токенов
@@ -106,27 +67,11 @@ CREATE TABLE IF NOT EXISTS jwt (
     expiresAt TIMESTAMP WITH TIME ZONE
 );
 
--- Таблица заказов
-CREATE TABLE orders (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) ON DELETE CASCADE, -- Заказчик (пользователь)
-    store_id INT REFERENCES Stores(id) ON DELETE CASCADE, -- Магазин, где был сделан заказ
-    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Дата заказа
-    cassette_id INT REFERENCES cassettes(id)
-);
-
--- Связь между заказами и кассетами (многие ко многим)
-CREATE TABLE order_items (
-    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
-    cassette_id INT REFERENCES Cassettes(id) ON DELETE CASCADE,
-    quantity INT NOT NULL, -- Количество кассет в заказе
-    price_per_item DECIMAL(10, 2) NOT NULL, -- Цена за одну кассету
-    PRIMARY KEY (order_id, cassette_id)
-);
-
+-- Таблица резервирования для пула
 CREATE TABLE reserve_pool (
     cassette_id INT REFERENCES Cassettes(id) NOT NULL,
     user_id INT REFERENCES users(id) NOT NULL,
+    reservation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT unique_cassette_user_pair UNIQUE (cassette_id, user_id)
 );
