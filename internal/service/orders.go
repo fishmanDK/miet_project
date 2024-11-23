@@ -25,6 +25,11 @@ func (s *OrderService) CreateOrder(newOrder core.Order) (int, error) {
 	return id, err
 }
 
-func (s *OrderService) DeleteOrder(delOrder core.DeleteOrder) error {
-	return s.storage.Orders.DeleteOrder(delOrder)
+func (s *OrderService) DeleteOrder(userID, cassetteID int) error {
+	return s.storage.Orders.DeleteOrder(userID, cassetteID)
+}
+
+func (s *OrderService) GetOrdersForAdmin(cassetteID, storeID int) ([]core.OrdersForAdminResponse, error) {
+	res, err := s.storage.Orders.GetOrdersForAdmin(cassetteID, storeID)
+	return res, err
 }

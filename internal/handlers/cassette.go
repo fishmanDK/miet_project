@@ -7,6 +7,8 @@ import (
 
 	"github.com/fishmanDK/miet_project/internal/core"
 	"github.com/gin-gonic/gin"
+
+	"github.com/fishmanDK/miet_project/internal/checker"
 )
 
 func (h *Handlers) GetCassettes(c *gin.Context) {
@@ -54,10 +56,6 @@ func (h *Handlers) GetCassette(c *gin.Context) {
 		return
 	}
 
-	cassette.Year = cassette.Year[:10]
-
-	fmt.Println("-------------------------", cassette.Year)
-
 	err = h.tmpls.ExecuteTemplate(c.Writer, "cassette.html", struct {
 		Cassette core.Cassette
 	}{
@@ -71,7 +69,6 @@ func (h *Handlers) DeleteCassette(c *gin.Context) {
 	cassetteID, err := strconv.Atoi(id)
 	if err != nil {
 		fmt.Println(err)
-		// Если не удается преобразовать ID, вернем ошибку
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid cassette ID"})
 		return
 	}
@@ -79,7 +76,6 @@ func (h *Handlers) DeleteCassette(c *gin.Context) {
 	err = h.service.Cassettes.DeleteCasseteByID(cassetteID)
 	if err != nil {
 		fmt.Println(err)
-		// Если не удается преобразовать ID, вернем ошибку
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid delete cassete by id"})
 		return
 	}
@@ -106,6 +102,42 @@ func (h *Handlers) CreateCassette(c *gin.Context) {
 	c.JSON(http.StatusOK, struct {
 		ID int `json:"id"`
 	}{ID: id})
+}
+
+
+func (h *Handlers) SaveCassetteChanges (c *gin.Context) {
+	var input core.ChangeCassette
+	if err := c.BindJSON(&input); err != nil {
+		h.log.Info(err.Error())
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	fmt.Println(input)
+	fmt.Println(input.TotalCount - input.Remain)
+
+	if count := input.TotalCount - input.Remain; count == input.TotalCount && input.TotalCount != 0{
+		fmt.Println(32)
+		msg := checker.Message{
+			CassetteID: input.CassetteID,
+			Count: count,
+		}
+
+		err := h.checker.Push(msg)
+		if err != nil{
+			h.log.Info(err.Error())
+		}
+	}
+	
+
+	err := h.service.Cassettes.SaveCassetteChanges(input)
+	if err != nil {
+		fmt.Println("---------", err)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
 }
 
 func (h *Handlers) CreateCassetteAvailability(c *gin.Context) {

@@ -17,13 +17,14 @@ import (
 	"github.com/fishmanDK/miet_project/internal/storage"
 	"github.com/fishmanDK/miet_project/pkg/logger"
 	"github.com/gin-gonic/gin"
-)
 
-// TODO: вспомнить новую особенность из собеса
+	c "github.com/fishmanDK/miet_project/internal/checker"
+)
 
 type app struct {
 	log      logger.Logger
 	cfg      *config.Config
+	checker  *c.CheckerFirstReserveUsers
 	handlers *handlers.Handlers
 	service  *service.Service
 	storage  *storage.Storage
@@ -41,12 +42,15 @@ func (a *app) Run() {
 		a.log.Fatal(fmt.Sprintf("Failed connect postgres: %v", err))
 	}
 
+	a.checker = c.NewCheckerFirstReserveUsers(postgres, a.log)
+	go a.checker.Start()
+
 	a.storage = storage.NewStorage(postgres)
 	a.service = service.NewSerivce(a.storage)
 
 	tmpls := assets.NewTemplates(assets.Assets)
 
-	a.handlers = handlers.NewHandlers(a.service, tmpls, a.log)
+	a.handlers = handlers.NewHandlers(a.checker, a.service, tmpls, a.log)
 
 	a.gin = a.handlers.InitRouts()
 
@@ -69,8 +73,13 @@ func (a *app) Run() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	err = a.checker.Stop()
+	if err != nil{
+		a.log.Info(err.Error())
+	}
+
 	if err := a.server.Shutdown(ctx); err != nil {
-		log.Fatal(fmt.Sprintf("Server shutdown error: %v", err))
+		a.log.Fatal(fmt.Sprintf("Server shutdown error: %v", err))
 	}
 
 	log.Println("Server gracefully stopped")

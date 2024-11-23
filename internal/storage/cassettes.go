@@ -142,6 +142,49 @@ func (s *CassettesStorage) CreateCassetteAvailability(newData core.CassetteAvail
 	return nil
 }
 
+func (s *CassettesStorage) SaveCassetteChanges(changes core.ChangeCassette) error {
+	// Начинаем транзакцию
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback() // Откатить транзакцию в случае ошибки
+
+	// Формируем запрос на обновление доступности кассеты
+	query := sq.Update("cassetteAvailability").
+		Set("total_count", changes.TotalCount).
+		Where(sq.Eq{"cassette_id": changes.CassetteID}).
+		PlaceholderFormat(sq.Dollar)
+
+	// Выполняем обновление доступности кассеты
+	_, err = query.RunWith(tx).Exec() // Выполняем исходный запрос
+	if err != nil {
+		return fmt.Errorf("failed to update cassette availability: %w", err)
+	}
+
+	// Если нужно обновить название и жанр кассеты
+	if changes.Name != "" || changes.Ganre != "" {
+		updateCassetteQuery := sq.Update("Cassettes").
+			Set("name", changes.Name).
+			Set("genre", changes.Ganre).
+			Where(sq.Eq{"id": changes.CassetteID}).
+			PlaceholderFormat(sq.Dollar)
+
+		// Выполняем обновление кассеты
+		_, err = updateCassetteQuery.RunWith(tx).Exec() // Выполняем обновление кассеты
+		if err != nil {
+			return fmt.Errorf("failed to update cassette: %w", err)
+		}
+	}
+
+	// Коммит транзакции
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 func (s *CassettesStorage) GetCassette(cassetteID int) (core.Cassette, error) {
 	query := sq.Select("c.name", "c.genre", "c.year_of_release", "ca.total_count", "ca.rented_count").
 		From("cassettes c").
@@ -216,7 +259,6 @@ func (s *CassettesStorage) GetCassetteDetails(cassetteID, userID int) (core.Cass
 	// Возвращаем результат
 	return res, nil
 }
-
 
 func (s *CassettesStorage) DeleteCasseteByID(cassetteID int) error {
 	tx, err := s.db.Begin()

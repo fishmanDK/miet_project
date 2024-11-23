@@ -11,7 +11,8 @@ import (
 type Orders interface {
 	GetUserOrders(userID int) ([]core.Order, error)
 	CreateOrder(newOrder core.Order) (int, error)
-	DeleteOrder(delOrder core.DeleteOrder) error
+	DeleteOrder(userID, cassetteID int) error
+	GetOrdersForAdmin(cassetteID, storeID int) ([]core.OrdersForAdminResponse, error)
 }
 
 type Auth interface {
@@ -27,6 +28,7 @@ type Cassettes interface {
 	CreateCassette(input core.CreateCassetteReq) (int, error)
 	CreateCassetteAvailability(newData core.CassetteAvailability) error
 	DeleteCasseteByID(cassetteID int) error
+	SaveCassetteChanges(changes core.ChangeCassette) error
 }
 type Store interface {
 	GetStores() ([]core.Store, error)
@@ -36,7 +38,6 @@ type Store interface {
 type Reservation interface {
 	CreateReservation(newReservate core.Reservation) error
 	DeleteReservation(userID, cassetteID int) error
-	GetReservationsForAdmin(cassetteID, storeID int) ([]core.ReservationsForAdminResponse, error)
 	GetUserReservations(userID int) ([]core.Reservation, error)
 }
 

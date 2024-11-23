@@ -25,11 +25,6 @@ func (s *ReservationService) DeleteReservation(userID, cassetteID int) error{
 }
 
 
-func (s *ReservationService) GetReservationsForAdmin(cassetteID, storeID int) ([]core.ReservationsForAdminResponse, error) {
-	res, err := s.storage.Reservation.GetReservationsForAdmin(cassetteID, storeID)
-	return res, err
-}
-
 func (s *ReservationService) GetUserReservations(userID int) ([]core.Reservation, error){
 	res, err := s.storage.Reservation.GetUserReservations(userID)
 	return res, err

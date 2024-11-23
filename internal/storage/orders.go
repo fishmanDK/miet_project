@@ -19,52 +19,51 @@ func newOrdersStorage(db *sqlx.DB) *OrdersStorage {
 }
 
 func (s *OrdersStorage) GetUserOrders(userID int) ([]core.Order, error) {
-    query, args, err := sq.Select("o.id", "o.order_date", "c.name", "s.address").
-        From("orders o").
+	query, args, err := sq.Select("c.id", "o.order_date", "c.name", "s.address").
+		From("orders o").
 		Join("cassettes c ON o.cassette_id = c.id").
 		Join("stores s ON o.store_id = s.id").
-        Where(sq.Eq{"user_id": userID}).
-        RunWith(s.db).
-        PlaceholderFormat(sq.Dollar).
-        ToSql()
+		Where(sq.Eq{"user_id": userID}).
+		RunWith(s.db).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
 
-	fmt.Println(query,args)
+	fmt.Println(query, args)
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    rows, err := s.db.Query(query, args...)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var orders []core.Order
-    for rows.Next() {
-        var order core.Order
-        err := rows.Scan(&order.ID, &order.OrderDate, &order.NameCassette, &order.StoreAddress)
-        if err != nil {
-            return nil, err
-        }
-        orders = append(orders, order)
-    }
+	var orders []core.Order
+	for rows.Next() {
+		var order core.Order
+		err := rows.Scan(&order.ID, &order.OrderDate, &order.NameCassette, &order.StoreAddress)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return orders, nil
+	return orders, nil
 }
 
 func (s *OrdersStorage) CreateOrder(newOrder core.Order) (int, error) {
-    tx, err := s.db.Begin()
+	tx, err := s.db.Begin()
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
 
-	// Проверяем наличие доступных кассет в магазине
 	var totalCount, rentedCount int
 	selectQuery := sq.Select("total_count", "rented_count").
 		From("cassetteAvailability").
@@ -84,7 +83,6 @@ func (s *OrdersStorage) CreateOrder(newOrder core.Order) (int, error) {
 		return 0, fmt.Errorf("кассета недоступна для заказа, нет в наличии")
 	}
 
-	// Создаем новый заказ
 	insertQuery := sq.Insert("orders").
 		Columns("user_id", "store_id", "cassette_id").
 		Values(newOrder.UserId, newOrder.StoreID, newOrder.CassetteId).
@@ -99,7 +97,6 @@ func (s *OrdersStorage) CreateOrder(newOrder core.Order) (int, error) {
 		return 0, err
 	}
 
-	// Обновляем счетчики в cassetteAvailability: уменьшаем total_count и увеличиваем rented_count
 	updateQuery := sq.Update("cassetteAvailability").
 		Set("total_count", totalCount-1).
 		Set("rented_count", rentedCount+1).
@@ -109,11 +106,9 @@ func (s *OrdersStorage) CreateOrder(newOrder core.Order) (int, error) {
 
 	_, err = updateQuery.Exec()
 	if err != nil {
-		fmt.Println(3)
 		return 0, err
 	}
 
-	// Коммит транзакции
 	err = tx.Commit()
 	if err != nil {
 		return 0, err
@@ -122,16 +117,109 @@ func (s *OrdersStorage) CreateOrder(newOrder core.Order) (int, error) {
 	return id, nil
 }
 
+func (s *OrdersStorage) DeleteOrder(userID, cassetteID int) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-
-func (s *OrdersStorage) DeleteOrder(delOrder core.DeleteOrder) error {
-	query := sq.Delete("orders").
-		Where(sq.Eq{"user_id": delOrder.UserId}).
-		Where(sq.Eq{"cassette_id": delOrder.CassetteId}).
-		Where(sq.Eq{"store_id": delOrder.StoreID}).
-		RunWith(s.db).
+	queryGetStoreID := sq.Select("store_id").
+		From("orders").
+		Where(sq.Eq{"cassette_id": cassetteID}).
+		Where(sq.Eq{"user_id": userID}).
+		RunWith(tx).
 		PlaceholderFormat(sq.Dollar)
 
-	_, err := query.Exec()
-	return err
+	var storeID int
+	err = queryGetStoreID.QueryRow().Scan(&storeID)
+	if err != nil || storeID == 0{
+		return err
+	}
+
+	queryDeleteOrder := sq.Delete("orders").
+		Where(sq.Eq{"cassette_id": cassetteID}).
+		Where(sq.Eq{"user_id": userID}).
+		RunWith(tx).
+		PlaceholderFormat(sq.Dollar)
+
+	_, err = queryDeleteOrder.Exec()
+	if err != nil {
+		return err
+	}
+
+	var totalCount, rentedCount int
+	selectQuery := sq.Select("total_count", "rented_count").
+		From("cassetteAvailability").
+		Where(sq.Eq{"cassette_id": cassetteID, "store_id": storeID}).
+		RunWith(tx).
+		PlaceholderFormat(sq.Dollar)
+
+	err = selectQuery.QueryRow().Scan(&totalCount, &rentedCount)
+	if err != nil {
+		return err
+	}
+
+	if totalCount <= 0 {
+		return fmt.Errorf("кассета недоступна для заказа, нет в наличии")
+	}
+
+	updateQuery := sq.Update("cassetteAvailability").
+		Set("total_count", totalCount+1).
+		Set("rented_count", rentedCount-1).
+		Where(sq.Eq{"cassette_id": cassetteID, "store_id": storeID}).
+		RunWith(tx).
+		PlaceholderFormat(sq.Dollar)
+
+	_, err = updateQuery.Exec()
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (s *OrdersStorage) GetOrdersForAdmin(cassetteID, storeID int) ([]core.OrdersForAdminResponse, error) {
+	query, args, err := sq.Select("order_date", "email", "cassette_id", "user_id").
+		From("users").
+		Join("orders ON users.id = orders.user_id").
+		Where(sq.Eq{"cassette_id": cassetteID}).
+		Where(sq.Eq{"store_id": storeID}).
+		RunWith(s.db).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	fmt.Println(query, args)
+	if err != nil {
+		return []core.OrdersForAdminResponse{}, err
+	}
+
+	rows, err := s.db.Query(query, cassetteID, storeID)
+	if err != nil {
+		return []core.OrdersForAdminResponse{}, err
+	}
+	defer rows.Close()
+
+	var res []core.OrdersForAdminResponse
+	for rows.Next() {
+		var newVal core.OrdersForAdminResponse
+
+		err := rows.Scan(&newVal.ReservationDate, &newVal.Email, &newVal.CassetteID, &newVal.UserID)
+		if err != nil {
+			return []core.OrdersForAdminResponse{}, err
+		}
+		res = append(res, newVal)
+	}
+
+	if err := rows.Err(); err != nil {
+		return []core.OrdersForAdminResponse{}, err
+	}
+
+	return res, nil
 }

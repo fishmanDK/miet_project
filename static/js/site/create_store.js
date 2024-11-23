@@ -2,22 +2,19 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM полностью загружен');
 
     // Функция для обработки отправки формы
-    function handleStoreFormSubmit(event) {
-        event.preventDefault();
+    function handleStoreFormSubmit() {
+        console.log("Обработчик сработал");
 
-        console.log('Форма отправлена');
-
-        const storeForm = event.target.closest('form');
-        if (!storeForm) {
-            console.error('Форма для добавления магазина не найдена');
-            return;
-        }
-
-        const storeAddressInput = storeForm.querySelector('#storeAddress');
-        if (!storeAddressInput) {
-            console.error('Поле ввода адреса магазина не найдено');
-            return;
-        }
+        const storeForm = document.getElementById('addStore');
+    console.log(storeForm); // Убедитесь, что форма найдена
+    
+    const storeAddressInput = storeForm ? storeForm.querySelector('#storeAddress') : null;
+    console.log(storeAddressInput); // Убедитесь, что поле с адресом найдено
+    
+    if (!storeAddressInput) {
+        console.error('Поле ввода адреса магазина не найдено');
+        return;
+    }
 
         const storeAddress = storeAddressInput.value.trim();
 
@@ -31,11 +28,13 @@ document.addEventListener('DOMContentLoaded', function () {
             address: storeAddress,
         };
 
+        console.log('Отправляем запрос на сервер с данными:', storeData);
+
         // Отправляем данные магазина на сервер
         fetch('/store', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${accessToken = getCookieByKey('access_token')}`,
+                'Authorization': `Bearer ${getCookieByKey('access_token')}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(storeData)
@@ -81,21 +80,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Поиск формы по более надежному селектору
-    const forms = document.getElementsByTagName('form');
-    let storeFormFound = false;
-    for (let i = 0; i < forms.length && !storeFormFound; i++) {
-        if (forms[i].querySelector('#storeAddress')) {
-            storeFormFound = true;
-            break;
-        }
-    }
-
-    if (storeFormFound) {
-        console.log('Форма для добавления магазина найдена');
-        const form = forms[0];
-        form.addEventListener('submit', handleStoreFormSubmit);
+    // Привязываем событие к кнопке вместо формы
+    const submitButton = document.getElementById('submitStoreForm');
+    if (submitButton) {
+        console.log('Кнопка для добавления магазина найдена');
+        submitButton.addEventListener('click', handleStoreFormSubmit);
     } else {
-        console.error('Форма для добавления магазина не найдена');
+        console.error('Кнопка для добавления магазина не найдена');
     }
 });

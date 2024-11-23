@@ -49,3 +49,7 @@ func (s *CassettesService) CreateCassetteAvailability(newData core.CassetteAvail
 func (s *CassettesService) DeleteCasseteByID(cassetteID int) error{
 	return s.storage.Cassettes.DeleteCasseteByID(cassetteID)
 }
+
+func (s *CassettesService) SaveCassetteChanges(changes core.ChangeCassette) error{
+	return s.storage.Cassettes.SaveCassetteChanges(changes)
+}

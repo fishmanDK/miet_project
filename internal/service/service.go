@@ -5,6 +5,7 @@ import (
 	"github.com/fishmanDK/miet_project/internal/storage"
 )
 
+
 type Service struct {
 	Auth        Auth
 	Cassettes   Cassettes
@@ -13,10 +14,12 @@ type Service struct {
 	Orders      Orders
 }
 
+//go:generate go run github.com/vektra/mockery/v2@v2.20.2 
 type Orders interface {
+	GetOrdersForAdmin(cassetteID, storeID int) ([]core.OrdersForAdminResponse, error)
 	GetUserOrders(userID int) ([]core.Order, error)
 	CreateOrder(newOrder core.Order) (int, error)
-	DeleteOrder(delOrder core.DeleteOrder) error
+	DeleteOrder(userID, cassetteID int) error
 }
 
 type Auth interface {
@@ -32,6 +35,7 @@ type Cassettes interface {
 	CreateCassette(newCassette core.CreateCassetteReq) (int, error)
 	CreateCassetteAvailability(newData core.CassetteAvailability) error
 	DeleteCasseteByID(cassetteID int) error
+	SaveCassetteChanges(changes core.ChangeCassette) error
 }
 type Store interface {
 	GetStores() ([]core.Store, error)
@@ -40,7 +44,6 @@ type Store interface {
 type Reservation interface {
 	CreateReservation(newReservate core.Reservation) error
 	DeleteReservation(userID, cassetteID int) error
-	GetReservationsForAdmin(cassetteID, storeID int) ([]core.ReservationsForAdminResponse, error)
 	GetUserReservations(userID int) ([]core.Reservation, error)
 }
 
