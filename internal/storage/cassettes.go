@@ -225,7 +225,7 @@ func (s *CassettesStorage) GetCassetteDetails(cassetteID, userID int) (core.Cass
 	var orderExists int
 	errCheckOrder := queryCheckOrder.QueryRow().Scan(&orderExists)
 
-	// Если произошла ошибка, кроме sql.ErrNoRows, возвращаем ошибку
+	// Если произошла ошибка, кроме migrations.ErrNoRows, возвращаем ошибку
 	if errCheckOrder != nil && errCheckOrder != sql.ErrNoRows {
 		return res, fmt.Errorf("error querying order status: %v", errCheckOrder)
 	}
@@ -246,7 +246,7 @@ func (s *CassettesStorage) GetCassetteDetails(cassetteID, userID int) (core.Cass
 	var reservationExists int
 	errCheckReservation := queryCheckReservation.QueryRow().Scan(&reservationExists)
 
-	// Если произошла ошибка, кроме sql.ErrNoRows, возвращаем ошибку
+	// Если произошла ошибка, кроме migrations.ErrNoRows, возвращаем ошибку
 	if errCheckReservation != nil && errCheckReservation != sql.ErrNoRows {
 		return res, fmt.Errorf("error querying reservation status: %v", errCheckReservation)
 	}

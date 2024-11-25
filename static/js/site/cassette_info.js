@@ -60,7 +60,7 @@ function saveChangesButton(event) {
     console.log(1)
 }
 
-function handleOrderClick(event) {
+function createOrder(event) {
     const button = event.target;
 
     if (button.hasAttribute('data-request-sent') && button.getAttribute('data-request-sent') === 'true') {
@@ -97,10 +97,11 @@ function handleOrderClick(event) {
     })
         .then(response => {
             if (response.ok) {
-                updateCounters();
+                const successMessage = document.createElement('h4');
+                successMessage.textContent = 'Заказ успешно оформлен';
+                successMessage.style.color = 'green';
 
-                button.disabled = true;
-                console.log('Заказ успешно оформлен');
+                button.replaceWith(successMessage);
             } else {
                 throw new Error('Ошибка при оформлении заказа.');
             }
@@ -300,7 +301,7 @@ function showCassetteDetails(id, name, genre, year, total_count, rented_count, i
     // <span id="total_count_value"><span id="totalcount" class="cassette-text">${total_count}</span></span> 
     // <span id="rented_count_value"><span id="rentedcount" class="cassette-text">${rented_count}</span></span> 
 
-    let detailsHtml = `
+    let detailsForAdminHtml = `
     <div class="cassette-info">
         <h4>Детали кассеты:</h4>
         <p id="cassette_id"><strong>ID: </strong><span id="cassetteid">${id}</span></p>
@@ -322,8 +323,19 @@ function showCassetteDetails(id, name, genre, year, total_count, rented_count, i
     </div>
     `;
 
+    let detailsForUserHtml = `
+    <div class="cassette-info">
+        <h4>Детали кассеты:</h4>
+        <p id="cassette_id"><strong>ID: </strong><span id="cassetteid">${id}</span></p>
+        <p class="cassette-inf info-row"><strong>Name:</strong> <span id="cassettename" class="cassette-text">${name}</span></p>
+        <p class="cassette-inf info-row"><strong>Genre:</strong> <span id="cassettegenre" class="cassette-text">${genre}</span></p>
+        <p class="cassette-inf info-row"><strong>Year of Realease:</strong> <span id="cassette_year_of_release" class="cassette-text">${year}</span></p>
+    </div>
+    `;
+
+    let res = ''
     if (isAdmin) {
-        detailsHtml += `
+        detailsForAdminHtml += `
         <button id="show_reservations_button" type="button" class="btn btn-primary btn-sm" style="inline-block: block;">Показать все заказы</button>
         <div id="reservationsTableContainer" style="display: none; margin-top: 20px;"></div>
         <div style="margin-top: 10px;">
@@ -331,23 +343,29 @@ function showCassetteDetails(id, name, genre, year, total_count, rented_count, i
             <button id="show_form_add_cassette_button" type="button" class="btn btn-primary btn-sm" style="display: inline-block; margin-left: 10px;">Добавить кассету</button>
         </div>
         `;
+
+        res = detailsForAdminHtml
     } else {
         if (isOrdered) {
-            detailsHtml += `<p style="color: green;">Данная кассета уже заказана</p>`;
+            detailsForUserHtml += `<p style="color: green;">Данная кассета уже заказана</p>`;
         } else if (total_count === 0) {
             if (isReservated) {
-                detailsHtml += deleteReservationButton;
+                detailsForUserHtml += deleteReservationButton;
             } else {
-                detailsHtml += addReservationButton;
+                detailsForUserHtml += addReservationButton;
             }
         } else {
-            detailsHtml += `
-            <button id="orderButton" type="button" class="btn btn-primary btn-sm" style="display: inline-block; margin-left: 10px;">Заказать</button>
+            detailsForUserHtml += `
+            <button id="orderButton" type="button" class="btn btn-primary btn-sm" style="display: inline-block; margin-left: 10px;" onclick="createOrder(event)">
+                Заказать
+            </button>
             `;
         }
+
+        res = detailsForUserHtml
     }
 
-    cassetteInfo.innerHTML = detailsHtml;
+    cassetteInfo.innerHTML = res;
 }
 
 function showOrders(event) {
@@ -651,7 +669,6 @@ function myFunction(event) {
 
     button.remove();
 }
-й
 
 function handleDeleteCassette(event) {
     const button = event.target;

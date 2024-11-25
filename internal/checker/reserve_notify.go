@@ -30,8 +30,8 @@ type CheckerFirstReserveUsers struct {
 
 func NewCheckerFirstReserveUsers(db *sqlx.DB, log logger.Logger) *CheckerFirstReserveUsers {
 	return &CheckerFirstReserveUsers{
-		ch: make(chan Message, 100),
-		db: db,
+		ch:  make(chan Message, 100),
+		db:  db,
 		log: log,
 	}
 }
@@ -47,7 +47,6 @@ func (c *CheckerFirstReserveUsers) Start() {
 					c.log.Info(err.Error())
 					continue
 				}
-				c.log.Info(fmt.Sprintf("Ожидают отправку: %v", data))
 
 				for _, d := range data {
 					err = c.sendEmail(d)
@@ -55,7 +54,6 @@ func (c *CheckerFirstReserveUsers) Start() {
 						c.log.Info(err.Error())
 						continue
 					}
-					c.log.Info(fmt.Sprintf("Оповещение отправленно на почту: %s", d.email))
 				}
 			}
 		}()
@@ -95,8 +93,8 @@ func (c *CheckerFirstReserveUsers) getUsers(cassetteID, count int) ([]dataToNoti
 	defer tx.Rollback()
 
 	query, args, err := sq.
-	Select("reserve_pool.cassette_id", "reserve_pool.user_id", "email", "name", "genre", "year_of_release").
-	From("reserve_pool").
+		Select("reserve_pool.id, reserve_pool.cassette_id", "reserve_pool.user_id", "email", "name", "genre", "year_of_release").
+		From("reserve_pool").
 		Join("users ON reserve_pool.user_id = users.id").
 		Join("cassettes ON reserve_pool.cassette_id = cassettes.id").
 		Where(sq.Eq{"reserve_pool.cassette_id": cassetteID}).
@@ -115,46 +113,42 @@ func (c *CheckerFirstReserveUsers) getUsers(cassetteID, count int) ([]dataToNoti
 	defer rows.Close()
 
 	var data []dataToNotify
-	var recordsToDelete []struct {
-		CassetteID int
-		UserID     int
-	} 
-
+	var ids []int
 	for rows.Next() {
 		var d dataToNotify
-		var cassetteID, userID int
+		var cassetteID, userID, id int
 
-		err := rows.Scan(&cassetteID, &userID, &d.email, &d.name, &d.ganre, &d.yearOfRelease)
+		err := rows.Scan(&id, &cassetteID, &userID, &d.email, &d.name, &d.ganre, &d.yearOfRelease)
 
 		if err != nil {
 			return []dataToNotify{}, err
 		}
 		data = append(data, d)
+		ids = append(ids, id)
 	}
 
 	if err := rows.Err(); err != nil {
 		return []dataToNotify{}, err
 	}
 
-	if len(recordsToDelete) > 0 {
-		deleteBuilder := sq.Delete("reserve_pool").PlaceholderFormat(sq.Dollar)
-
-		for _, record := range recordsToDelete {
-			deleteBuilder = deleteBuilder.Where(sq.And{
-				sq.Eq{"cassette_id": record.CassetteID},
-				sq.Eq{"user_id": record.UserID},
-			})
-		}
-
-		deleteQuery, deleteArgs, err := deleteBuilder.ToSql()
+	if len(ids) > 0 {
+		query, args, err := sq.Delete("reserve_pool").
+			Where(sq.Eq{"id": ids}).
+			PlaceholderFormat(sq.Dollar).
+			ToSql()
 		if err != nil {
-			return []dataToNotify{}, err
+			return []dataToNotify{}, fmt.Errorf("failed to build SQL query: %w", err)
 		}
 
-		_, err = tx.Exec(deleteQuery, deleteArgs...)
+		fmt.Println("Generated Query:", query)
+		fmt.Println("Arguments:", args)
+
+		_, err = tx.Exec(query, args...)
 		if err != nil {
-			return []dataToNotify{}, err
+			return []dataToNotify{}, fmt.Errorf("failed to execute query: %w", err)
 		}
+	} else {
+		fmt.Println("No IDs provided, skipping DELETE query.")
 	}
 
 	err = tx.Commit()

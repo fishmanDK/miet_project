@@ -14,97 +14,102 @@
             font-size: 28px;
             font-family: "Times", "Times New Roman", "serif", "sans-serif", "EmojiSymbols";
         }
+
         .hi-red {
             color: red;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-          <a class="navbar-brand" href="#">Navbar</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Navbar</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="/store">Stores</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Logout</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/orders">My orders</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/reservations">My reservations</a>
-              </li>
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/store">Stores</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Logout</a>
+                </li>
+                {{if not .IsAdmin}}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/orders">My orders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reservations">My reservations</a>
+                    </li>
+                {{end}}
             </ul>
-          </div>
         </div>
-    </nav>
-    <div style="margin-top: 40px;">
-        <div class="container">
+    </div>
+</nav>
+<div style="margin-top: 40px;">
+    <div class="container">
         <div class="row">
             <!-- Колонка со списком кассет (слева) -->
             <div class="col-md-5 me-5"> <!-- Уменьшаем колонку и добавляем отступ -->
                 <h3>Список кассет</h3>
                 <table class="table">
                     <thead>
-                        <tr>
-                            <th scope="col">ID</th>
-                            <th scope="col">Name</th>
-                            <th scope="col">Genre</th>
-                            <th scope="col">Year of Release</th>
-                        </tr>
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Genre</th>
+                        <th scope="col">Year of Release</th>
+                    </tr>
                     </thead>
                     <tbody>
-                        {{range $index, $cassette := .Cassettes}}
-                        <tr>
-                            <td class="cassette-item" data-id="{{$index}}" data-type="id">{{$cassette.Id}}</td>
-                            <td class="cassette-item" data-id="{{$index}}" data-type="name">{{$cassette.Name}}</td>
-                            <td class="cassette-item" data-id="{{$index}}" data-type="genre">{{$cassette.Genre}}</td>
-                            <td class="cassette-item" data-id="{{$index}}" data-type="year">{{$cassette.Year}}</td>
-                        </tr>
-                        {{end}}
+                    {{range $index, $cassette := .Cassettes}}
+                    <tr>
+                        <td class="cassette-item" data-id="{{$index}}" data-type="id">{{$cassette.Id}}</td>
+                        <td class="cassette-item" data-id="{{$index}}" data-type="name">{{$cassette.Name}}</td>
+                        <td class="cassette-item" data-id="{{$index}}" data-type="genre">{{$cassette.Genre}}</td>
+                        <td class="cassette-item" data-id="{{$index}}" data-type="year">{{$cassette.Year}}</td>
+                    </tr>
+                    {{end}}
                     </tbody>
                 </table>
             </div>
 
-            
+
             <!-- Колонка с формой (справа) -->
-                <div class="col-md-5 ms-5" id="formContainer"> <!-- Добавляем отступ слева -->
-                    {{if .IsAdmin}}
-                        <h3>Добавление новой кассеты</h3>
-                        <form id="cassetteForm">
-                            <div class="mb-3">
-                                <label for="cassetteName" class="form-label">Name</label>
-                                <input type="text" class="form-control" id="cassetteName">
-                            </div>
-                            <div class="mb-3">
-                                <label for="cassetteGenre" class="form-label">Genre</label>
-                                <input type="text" class="form-control" id="cassetteGenre">
-                            </div>
-                            <div class="mb-3">
-                                <label for="yearOfRelease" class="form-label">Year of release</label>
-                                <input type="number" class="form-control" id="yearOfRelease" min="1900" max="2100" step="1" placeholder="Enter year (e.g. 2024)">
-                            </div>
-                            <div class="mb-3">
-                                <label for="totalCount" class="form-label">Total count</label>
-                                <input type="number" class="form-control" id="totalCount" step="1">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Добавление</button>
-                        </form>
-                    {{end}}
-                </div>
-            
+            <div class="col-md-5 ms-5" id="formContainer"> <!-- Добавляем отступ слева -->
+                {{if .IsAdmin}}
+                <h3>Добавление новой кассеты</h3>
+                <form id="cassetteForm">
+                    <div class="mb-3">
+                        <label for="cassetteName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="cassetteName">
+                    </div>
+                    <div class="mb-3">
+                        <label for="cassetteGenre" class="form-label">Genre</label>
+                        <input type="text" class="form-control" id="cassetteGenre">
+                    </div>
+                    <div class="mb-3">
+                        <label for="yearOfRelease" class="form-label">Year of release</label>
+                        <input type="number" class="form-control" id="yearOfRelease" min="1900" max="2100" step="1"
+                               placeholder="Enter year (e.g. 2024)">
+                    </div>
+                    <div class="mb-3">
+                        <label for="totalCount" class="form-label">Total count</label>
+                        <input type="number" class="form-control" id="totalCount" step="1">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Добавление</button>
+                </form>
+                {{end}}
+            </div>
+
         </div>
     </div>
 
-    
+
 </div>
 <script type="text/javascript" src="/static/js/site/cassette_info.js"></script>
-    <script type="text/javascript" src="/static/js/site/logout.js"></script>
+<script type="text/javascript" src="/static/js/site/logout.js"></script>
 </body>
 </html>
