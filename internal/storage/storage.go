@@ -1,3 +1,6 @@
+//go:generate rm -rf ./mock_gen.go
+//go:generate mockgen -destination=./mock_gen.go -package=storage -source=storage.go
+
 package storage
 
 import (
@@ -61,7 +64,7 @@ type Config struct {
 func NewStorage(db *sqlx.DB) *Storage {
 	return &Storage{
 		Cassettes:   newCassettesStorage(db),
-		Auth:        newAuthStorage(db),
+		Auth:        NewAuthStorage(db),
 		Store:       newStoreStorage(db),
 		Reservation: newReservationStorage(db),
 		Orders:      newOrdersStorage(db),

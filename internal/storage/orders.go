@@ -1,9 +1,12 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/fishmanDK/miet_project/internal/core"
 	"github.com/jmoiron/sqlx"
 )
@@ -18,39 +21,45 @@ func newOrdersStorage(db *sqlx.DB) *OrdersStorage {
 	}
 }
 
+func toDatasetGetUserOrders(userID *int) *goqu.SelectDataset {
+	selectDataset := goqu.From("orders")
+	fmt.Println(32)
+	if userID == nil {
+		return selectDataset
+	}
+
+	selectDataset = selectDataset.Select("cassettes.id", "orders.order_date", "cassettes.name", "stores.address").
+		Join(goqu.I("cassettes"),
+			goqu.On(ordersFiled("cassette_id").
+				Eq(cassetteField("id")))).
+		Join(goqu.I("stores"),
+			goqu.On(ordersFiled("store_id").
+				Eq(storesFiled("id")))).
+		Where(ordersFiled("user_id").Eq(*userID))
+
+	return selectDataset
+}
+
+func cassettesFiled(fieldName string) exp.IdentifierExpression {
+	return goqu.I(fmt.Sprintf("%s.%s", "cassettes", fieldName))
+}
+
+func ordersFiled(fieldName string) exp.IdentifierExpression {
+	return goqu.I(fmt.Sprintf("%s.%s", "orders", fieldName))
+}
+
+func storesFiled(fieldName string) exp.IdentifierExpression {
+	return goqu.I(fmt.Sprintf("%s.%s", "stores", fieldName))
+}
+
 func (s *OrdersStorage) GetUserOrders(userID int) ([]core.Order, error) {
-	query, args, err := sq.Select("c.id", "o.order_date", "c.name", "s.address").
-		From("orders o").
-		Join("cassettes c ON o.cassette_id = c.id").
-		Join("stores s ON o.store_id = s.id").
-		Where(sq.Eq{"user_id": userID}).
-		RunWith(s.db).
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
-
-	fmt.Println(query, args)
-
+	query, args, err := toDatasetGetUserOrders(&userID).ToSQL()
 	if err != nil {
-		return nil, err
+		return []core.Order{}, err
 	}
-
-	rows, err := s.db.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
 
 	var orders []core.Order
-	for rows.Next() {
-		var order core.Order
-		err := rows.Scan(&order.ID, &order.OrderDate, &order.NameCassette, &order.StoreAddress)
-		if err != nil {
-			return nil, err
-		}
-		orders = append(orders, order)
-	}
-
-	if err := rows.Err(); err != nil {
+	if err := s.db.SelectContext(context.Background(), &orders, query, args...); err != nil {
 		return nil, err
 	}
 
@@ -133,7 +142,7 @@ func (s *OrdersStorage) DeleteOrder(userID, cassetteID int) error {
 
 	var storeID int
 	err = queryGetStoreID.QueryRow().Scan(&storeID)
-	if err != nil || storeID == 0{
+	if err != nil || storeID == 0 {
 		return err
 	}
 

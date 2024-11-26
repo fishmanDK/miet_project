@@ -1,10 +1,12 @@
+//go:generate rm -rf ./mock_gen.go
+//go:generate mockgen -destination=./mock_gen.go -package=service -source=service.go
+
 package service
 
 import (
 	"github.com/fishmanDK/miet_project/internal/core"
 	"github.com/fishmanDK/miet_project/internal/storage"
 )
-
 
 type Service struct {
 	Auth        Auth
@@ -14,7 +16,6 @@ type Service struct {
 	Orders      Orders
 }
 
-//go:generate go run github.com/vektra/mockery/v2@v2.20.2 
 type Orders interface {
 	GetOrdersForAdmin(cassetteID, storeID int) ([]core.OrdersForAdminResponse, error)
 	GetUserOrders(userID int) ([]core.Order, error)
@@ -49,10 +50,10 @@ type Reservation interface {
 
 func NewSerivce(storage *storage.Storage) *Service {
 	return &Service{
-		Cassettes:   newCassettesService(storage),
-		Auth:        newAuthService(storage),
-		Store:       newStoreService(storage),
-		Reservation: newReservationService(storage),
-		Orders:      newOrderService(storage),
+		Cassettes:   NewCassettesService(storage),
+		Auth:        NewAuthService(storage),
+		Store:       NewStoreService(storage),
+		Reservation: NewReservationService(storage),
+		Orders:      NewOrderService(storage),
 	}
 }

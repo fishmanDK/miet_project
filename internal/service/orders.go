@@ -5,19 +5,19 @@ import (
 	"github.com/fishmanDK/miet_project/internal/storage"
 )
 
-type OrderService struct{
+type OrderService struct {
 	storage *storage.Storage
 }
 
-func newOrderService(storage *storage.Storage) *OrderService{
+func NewOrderService(storage *storage.Storage) *OrderService {
 	return &OrderService{
 		storage: storage,
 	}
 }
 
-func (s *OrderService) GetUserOrders(userID int) ([]core.Order, error){
+func (s *OrderService) GetUserOrders(userID int) ([]core.Order, error) {
 	orders, err := s.storage.Orders.GetUserOrders(userID)
-	return orders, err 
+	return orders, err
 }
 
 func (s *OrderService) CreateOrder(newOrder core.Order) (int, error) {

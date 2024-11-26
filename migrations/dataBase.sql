@@ -54,7 +54,6 @@ CREATE TABLE order_items (
     PRIMARY KEY (order_id, cassette_id)
 );
 
--- Таблица для хранения JWT-токенов
 CREATE TABLE IF NOT EXISTS jwt (
     user_id INT UNIQUE REFERENCES users(id) ON DELETE CASCADE,
     refresh_token VARCHAR(255),

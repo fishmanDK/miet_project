@@ -5,11 +5,11 @@ import (
 	"github.com/fishmanDK/miet_project/internal/storage"
 )
 
-type StoreService struct{
+type StoreService struct {
 	storage *storage.Storage
 }
 
-func newStoreService(storage *storage.Storage) *StoreService{
+func NewStoreService(storage *storage.Storage) *StoreService {
 	return &StoreService{
 		storage: storage,
 	}

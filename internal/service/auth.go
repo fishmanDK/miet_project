@@ -7,21 +7,21 @@ import (
 	"github.com/fishmanDK/miet_project/internal/storage"
 )
 
-type AuthService struct{
+type AuthService struct {
 	storage *storage.Storage
 }
 
-func newAuthService(storage *storage.Storage) *AuthService{
+func NewAuthService(storage *storage.Storage) *AuthService {
 	return &AuthService{
 		storage: storage,
 	}
 }
 
-func (s *AuthService) Authentication(user core.Client) (core.Tokens, error){
+func (s *AuthService) Authentication(user core.Client) (core.Tokens, error) {
 	var tokens core.Tokens
 
 	res, err := s.storage.Auth.Authentication(user)
-	if err != nil{
+	if err != nil {
 		return tokens, err
 	}
 
@@ -44,7 +44,7 @@ func (s *AuthService) Authentication(user core.Client) (core.Tokens, error){
 	return tokens, err
 }
 
-func (s *AuthService) CreateUser(newUser core.Client) (int, error){
+func (s *AuthService) CreateUser(newUser core.Client) (int, error) {
 	id, err := s.storage.Auth.CreateUser(newUser)
 	return id, err
 }

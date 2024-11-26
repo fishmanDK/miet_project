@@ -1,11 +1,14 @@
 package storage
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/fishmanDK/miet_project/internal/core"
 	"github.com/jmoiron/sqlx"
 )
@@ -20,31 +23,38 @@ func newCassettesStorage(db *sqlx.DB) *CassettesStorage {
 	}
 }
 
-func (s *CassettesStorage) GetCassettes() ([]core.Cassette, error) {
-	query, _, err := sq.Select("id", "name", "genre", "year_of_release").From("Cassettes").ToSql()
-	if err != nil {
-		return []core.Cassette{}, err
+func toDatasetListCassettes(id *int) *goqu.SelectDataset {
+	selectDataset := goqu.From("cassettes")
+
+	if id == nil {
+		return selectDataset
 	}
 
-	rows, err := s.db.Query(query)
+	selectDataset = selectDataset.Select("cassettes.id", "cassettes.name", "cassettes.genre", "cassettes.year_of_release").
+		Join(goqu.I("cassetteavailability"),
+			goqu.On(cassetteavailabilityField("cassette_id").
+				Eq(cassetteField("id")))).
+		Where(cassetteavailabilityField("store_id").Eq(id))
+	return selectDataset
+}
+
+func cassetteField(fieldName string) exp.IdentifierExpression {
+	return goqu.I(fmt.Sprintf("%s.%s", "cassettes", fieldName))
+}
+
+func cassetteavailabilityField(fieldName string) exp.IdentifierExpression {
+	return goqu.I(fmt.Sprintf("%s.%s", "cassetteavailability", fieldName))
+}
+
+func (s *CassettesStorage) GetCassettes() ([]core.Cassette, error) {
+	query, _, err := toDatasetListCassettes(nil).ToSQL()
 	if err != nil {
 		return []core.Cassette{}, err
 	}
-	defer rows.Close()
 
 	var cassettes []core.Cassette
-	for rows.Next() {
-		var cassette core.Cassette
-
-		err := rows.Scan(&cassette.Id, &cassette.Name, &cassette.Genre, &cassette.Year)
-		if err != nil {
-			return []core.Cassette{}, err
-		}
-		cassettes = append(cassettes, cassette)
-	}
-
-	if err := rows.Err(); err != nil {
-		return []core.Cassette{}, err
+	if err = s.db.SelectContext(context.Background(), &cassettes, query); err != nil {
+		return nil, fmt.Errorf("list cassettes error during execute query: %w", err)
 	}
 
 	return cassettes, nil
@@ -93,35 +103,14 @@ func (s *CassettesStorage) CreateCassette(newCassette core.CreateCassetteReq) (i
 }
 
 func (s *CassettesStorage) GetCassettesByStoreID(id int) ([]core.Cassette, error) {
-	query, _, err := sq.Select("id", "name", "genre", "year_of_release").
-		From("Cassettes").
-		Join("cassetteavailability ON cassettes.id = cassetteavailability.cassette_id").
-		Where(sq.Eq{"store_id": id}).
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
+	query, _, err := toDatasetListCassettes(&id).ToSQL()
 	if err != nil {
 		return []core.Cassette{}, err
 	}
-
-	rows, err := s.db.Query(query, id)
-	if err != nil {
-		return []core.Cassette{}, err
-	}
-	defer rows.Close()
 
 	var cassettes []core.Cassette
-	for rows.Next() {
-		var cassette core.Cassette
-
-		err := rows.Scan(&cassette.Id, &cassette.Name, &cassette.Genre, &cassette.Year)
-		if err != nil {
-			return []core.Cassette{}, err
-		}
-		cassettes = append(cassettes, cassette)
-	}
-
-	if err := rows.Err(); err != nil {
-		return []core.Cassette{}, err
+	if err = s.db.SelectContext(context.Background(), &cassettes, query); err != nil {
+		return nil, fmt.Errorf("list cassettes error during execute query: %w", err)
 	}
 
 	return cassettes, nil
@@ -143,26 +132,22 @@ func (s *CassettesStorage) CreateCassetteAvailability(newData core.CassetteAvail
 }
 
 func (s *CassettesStorage) SaveCassetteChanges(changes core.ChangeCassette) error {
-	// Начинаем транзакцию
 	tx, err := s.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback() // Откатить транзакцию в случае ошибки
+	defer tx.Rollback()
 
-	// Формируем запрос на обновление доступности кассеты
 	query := sq.Update("cassetteAvailability").
 		Set("total_count", changes.TotalCount).
 		Where(sq.Eq{"cassette_id": changes.CassetteID}).
 		PlaceholderFormat(sq.Dollar)
 
-	// Выполняем обновление доступности кассеты
-	_, err = query.RunWith(tx).Exec() // Выполняем исходный запрос
+	_, err = query.RunWith(tx).Exec()
 	if err != nil {
 		return fmt.Errorf("failed to update cassette availability: %w", err)
 	}
 
-	// Если нужно обновить название и жанр кассеты
 	if changes.Name != "" || changes.Ganre != "" {
 		updateCassetteQuery := sq.Update("Cassettes").
 			Set("name", changes.Name).
