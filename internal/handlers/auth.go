@@ -28,6 +28,8 @@ func (h *Handlers) signIn(c *gin.Context) {
 		return
 	}
 
+	fmt.Println(input)
+
 	tokens, err := h.service.Auth.Authentication(input)
 	if err != nil {
 		fmt.Println("can't execute template", err)
@@ -61,12 +63,12 @@ func (h *Handlers) signUp(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, struct{
+	c.JSON(http.StatusOK, struct {
 		Status string `json:"status"`
-		Msg string `json:"msg"`
+		Msg    string `json:"msg"`
 	}{
 		Status: "ok",
-		Msg: "user success created",
+		Msg:    "user success created",
 	})
 }
 
